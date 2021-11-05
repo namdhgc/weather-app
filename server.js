@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
 const app = express();
-
+const fs = require('fs');
 
 require("dotenv").config();
 
@@ -16,26 +16,33 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
+const cities = JSON.parse(fs.readFileSync('./libs/city.list.json', 'utf-8'));
+
 // Setup your default display on launch
 app.get("/", function(req, res) {
   // It will not fetch and display any data in the index page
-    res.render("index", { weather: null, error: null });
+
+    res.render("index", { weather: null, error: null , cities: cities });
 });
 
 // On a post request, the app shall data from OpenWeatherMap using the given arguments
 app.post("/", function(req, res) {
     // Get city name passed in the form
-    let city = req.body.city;
+    // let city = req.body.city;
+    let cityId = req.body.city;
+
 
     // Use that city name to fetch data
     // Use the API_KEY in the '.env' file
-    let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+    
+    // let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`; // search by city name
+    let url = `http://api.openweathermap.org/data/2.5/weather?id=${cityId}&units=metric&appid=${apiKey}`;
 
     // Request for data using the URL
     request(url, function(err, response, body) {
         // On return, check the json data fetched
         if (err) {
-            res.render('index', { weather: null, error: 'Error, please try again '});
+            res.render('index', { weather: null, error: 'Error, please try again ', cities: cities });
         } else {
             let weather = JSON.parse(body);
 
@@ -43,7 +50,7 @@ app.post("/", function(req, res) {
             console.log(weather);
 
             if (weather.main == undefined) {
-                res.render('index', { weather: null, error: 'Error, please try again' });
+                res.render('index', { weather: null, error: 'Error, please try again', cities: cities });
             } else {
                 // we shall use the data got to set up your output
                 let place = `${weather.name}, ${weather.sys.country}`,
@@ -85,6 +92,7 @@ app.post("/", function(req, res) {
                     visibility: visibility,
                     main: main,
                     error: null,
+                    cities: cities
                 });
             }
         }
